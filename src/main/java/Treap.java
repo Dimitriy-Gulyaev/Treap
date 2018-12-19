@@ -10,7 +10,6 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     private Node<K> root = null;
     private int size;
     int subSize = 0;
-    Node<K> subRoot;
     private K fromElement;
     private K toElement;
 
@@ -43,7 +42,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             }
             root = add(root, data);
             size++;
-            subSize++;
+            Treap.this.subSize++;
             return true;
         }
 
@@ -57,7 +56,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             if (!this.contains(o)) return false;
             root = remove(root, data);
             size--;
-            subSize--;
+            Treap.this.subSize--;
             return true;
         }
 
@@ -148,68 +147,25 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     @NotNull
     @Override
     public SortedSet<K> subSet(K fromElement, K toElement) {
-        if (fromElement.compareTo(toElement) > 0) throw new IllegalArgumentException();
-        return searchForSubSet(root, fromElement, toElement);
-    }
-
-    private SubTree searchForSubSet(Node<K> current, K fromElement, K toElement) {
-        int comparison = fromElement.compareTo(current.value);
-        if (comparison > 0) {
-            if (current.right != null) {
-                return searchForHeadSet(current.right, fromElement);
-            } else throw new IllegalArgumentException();
-        } else {
-            subRoot = current;
-            this.fromElement = fromElement;
-            this.toElement = toElement;
-            return new SubTree();
-        }
+        this.fromElement = fromElement;
+        this.toElement = toElement;
+        return new SubTree();
     }
 
     @NotNull
     @Override
     public SortedSet<K> headSet(K toElement) {
-        return searchForHeadSet(root, toElement);
-    }
-
-    private SubTree searchForHeadSet(Node<K> current, K value) {
-        int comparison = value.compareTo(current.value);
-        if (comparison < 0) {
-            if (current.left != null) {
-                return searchForHeadSet(current.left, value);
-            } else throw new IllegalArgumentException();
-        } else {
-            if (comparison > 0) {
-                subRoot = current;
-            } else if (current.left != null) {
-                subRoot = current.left;
-            } else {
-                subRoot = null;
-            }
-            fromElement = null;
-            toElement = value;
-            return new SubTree();
-        }
+        this.fromElement = null;
+        this.toElement = toElement;
+        return new SubTree();
     }
 
     @NotNull
     @Override
     public SortedSet<K> tailSet(K fromElement) {
-        return searchForTailSet(root, fromElement);
-    }
-
-    private SubTree searchForTailSet(Node<K> current, K value) {
-        int comparison = value.compareTo(current.value);
-        if (comparison > 0) {
-            if (current.right != null) {
-                return searchForHeadSet(current.right, value);
-            } else throw new IllegalArgumentException();
-        } else {
-            subRoot = current;
-            fromElement = value;
-            toElement = null;
-            return new SubTree();
-        }
+        this.fromElement = fromElement;
+        this.toElement = null;
+        return new SubTree();
     }
 
     @Override
@@ -256,27 +212,23 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return new TreapIterator();
     }
 
+
     @NotNull
     @Override
-    public K[] toArray() {
-        ArrayList<K> result = new ArrayList<>();
-        for (K o : this) {
-            result.add(o);
-        }
-        return (K[]) result.toArray();
+    public Object[] toArray() {
+        Object[] result = new Object[this.size];
+        Iterator<K> iterator = this.iterator();
+        for (int i = 0; i < this.size; i++) result[i] = iterator.next();
+        return result;
     }
 
     @SuppressWarnings("unchecked")
     @NotNull
     @Override
-    public K[] toArray(@NotNull Object[] a) {
-        Object[] result = new Object[this.size()];
-        int i = 0;
-        for (K element : this) {
-            result[i] = element;
-            i++;
-        }
-        return (K[]) result;
+    public Object[] toArray(@NotNull Object[] a) {
+        Object[] array = this.toArray();
+        if (this.size >= 0) System.arraycopy(array, 0, a, 0, this.size);
+        return a;
     }
 
     @Override
@@ -340,18 +292,16 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         @SuppressWarnings("unchecked")
         K data = (K) o;
         Node<K> node = find(data);
-        if (node != null) {
-            if (node.value.compareTo(data) != 0) return false;
-            if (root == null) return false;
-            if (toElement != null && fromElement != null) {
-                if (node.value.compareTo(toElement) < 0 &&
-                        node.value.compareTo(fromElement) >= 0) {
-                    subSize--;
-                }
-            } else if (toElement != null && node.value.compareTo(toElement) < 0 ||
-                    fromElement != null && node.value.compareTo(fromElement) >= 0) {
+        if (node == null) return false;
+        if (node.value.compareTo(data) != 0) return false;
+        if (toElement != null && fromElement != null) {
+            if (node.value.compareTo(toElement) < 0 &&
+                    node.value.compareTo(fromElement) >= 0) {
                 subSize--;
             }
+        } else if (toElement != null && node.value.compareTo(toElement) < 0 ||
+                fromElement != null && node.value.compareTo(fromElement) >= 0) {
+            subSize--;
         }
         root = remove(root, data);
         size--;
@@ -371,12 +321,18 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
                 } else if (node.right == null) {
                     return node.left;
                 } else {
-                    node.value = this.first();
+                    node.value = this.leftmost(node.right);
                     node.right = remove(node.right, node.value);
                 }
             }
         }
         return node;
+    }
+
+    private K leftmost(Node<K> searchNode) {
+        Node<K> node = searchNode;
+        while (node.left != null) node = node.left;
+        return node.value;
     }
 
     @SuppressWarnings("unchecked")
@@ -424,13 +380,10 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     public class TreapIterator implements Iterator<K> {
 
         private Node<K> current;
-        private Node<K> parent;
-        private LinkedList<Node<K>> rememberParents;
         private LinkedList<Node<K>> elements;
 
         private TreapIterator() {
             current = null;
-            rememberParents = new LinkedList<>();
             elements = new LinkedList<>();
             Node<K> node = root;
             while (node != null) {
@@ -442,11 +395,6 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         private Node<K> findNext(boolean fromNext) {
             if (current == null) {
                 if (fromNext) {
-                    if (elements.size() == 1) {
-                        parent = null;
-                    } else {
-                        parent = elements.get(1);
-                    }
                     return elements.pollFirst();
                 }
                 if (elements.size() == 0) return null;
@@ -460,26 +408,13 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
                 if (fromNext) {
                     elements.remove(0);
-                    if (rememberParents.size() != 0 && (rememberParents.getFirst().right == result ||
-                            rememberParents.getFirst().left == result)) {
-                        parent = rememberParents.pollFirst();
-                    } else if (elements.size() != 0) {
-                        parent = elements.getFirst();
-                    } else {
-                        parent = null;
-                    }
                 }
             } else {
                 result = result.right;
-                parent = current;
                 if (result != null) {
-                    if (result.left != null && fromNext) {
-                        rememberParents.add(0, current);
-                    }
                     while (result.left != null) {
                         if (fromNext) {
                             elements.add(0, result);
-                            parent = elements.getFirst();
                         }
                         result = result.left;
                     }

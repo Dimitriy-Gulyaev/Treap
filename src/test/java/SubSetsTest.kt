@@ -1,7 +1,7 @@
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class JavaHeadSetTest : AbstractHeadTailTest() {
+class SubSetsTest : AbstractSubSetsTest() {
 
     @BeforeEach
     fun fillTree() {

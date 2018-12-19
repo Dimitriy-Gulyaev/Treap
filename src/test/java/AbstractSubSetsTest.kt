@@ -3,26 +3,26 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-abstract class AbstractHeadTailTest {
-    private lateinit var tree: SortedSet<Int>
+abstract class AbstractSubSetsTest {
+    private lateinit var treap: SortedSet<Int>
 
     protected fun fillTree(empty: SortedSet<Int>) {
-        this.tree = empty
+        this.treap = empty
         //В произвольном порядке добавим числа от 1 до 10
-        tree.add(5)
-        tree.add(1)
-        tree.add(2)
-        tree.add(7)
-        tree.add(9)
-        tree.add(10)
-        tree.add(8)
-        tree.add(4)
-        tree.add(3)
-        tree.add(6)
+        treap.add(5)
+        treap.add(1)
+        treap.add(2)
+        treap.add(7)
+        treap.add(9)
+        treap.add(10)
+        treap.add(8)
+        treap.add(4)
+        treap.add(3)
+        treap.add(6)
     }
 
     protected fun doHeadSetTest() {
-        var set: SortedSet<Int> = tree.headSet(5)
+        var set: SortedSet<Int> = treap.headSet(5)
         assertEquals(true, set.contains(1))
         assertEquals(true, set.contains(2))
         assertEquals(true, set.contains(3))
@@ -34,7 +34,7 @@ abstract class AbstractHeadTailTest {
         assertEquals(false, set.contains(9))
         assertEquals(false, set.contains(10))
 
-        set = tree.headSet(9)
+        set = treap.headSet(9)
         assertEquals(8, set.size)
         assertEquals(true, set.contains(1))
         assertEquals(true, set.contains(2))
@@ -47,13 +47,13 @@ abstract class AbstractHeadTailTest {
         assertEquals(false, set.contains(9))
         assertEquals(false, set.contains(10))
 
-        set = tree.headSet(159)
+        set = treap.headSet(159)
         for (i in 1..10)
             assertEquals(true, set.contains(i))
     }
 
     protected fun doTailSetTest() {
-        var set: SortedSet<Int> = tree.tailSet(5)
+        var set: SortedSet<Int> = treap.tailSet(5)
         assertEquals(false, set.contains(1))
         assertEquals(false, set.contains(2))
         assertEquals(false, set.contains(3))
@@ -65,7 +65,7 @@ abstract class AbstractHeadTailTest {
         assertEquals(true, set.contains(9))
         assertEquals(true, set.contains(10))
 
-        set = tree.tailSet(2)
+        set = treap.tailSet(2)
         assertEquals(9, set.size)
         assertEquals(false, set.contains(1))
         assertEquals(true, set.contains(2))
@@ -78,77 +78,77 @@ abstract class AbstractHeadTailTest {
         assertEquals(true, set.contains(9))
         assertEquals(true, set.contains(10))
 
-        set = tree.tailSet(-236)
+        set = treap.tailSet(-236)
         for (i in 1..10)
             assertEquals(true, set.contains(i))
 
     }
 
     protected fun doHeadSetRelationTest() {
-        val set: SortedSet<Int> = tree.headSet(7)
+        val set: SortedSet<Int> = treap.headSet(7)
         assertEquals(6, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
 
         set.remove(4)
-        assertFalse(tree.contains(4))
+        assertFalse(treap.contains(4))
         assertEquals(5, set.size)
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
 
         set.add(-1)
         assertTrue(set.contains(-1))
-        assertTrue(tree.contains(-1))
+        assertTrue(treap.contains(-1))
         assertEquals(6, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
 
-        tree.add(0)
+        treap.add(0)
         assertTrue(set.contains(0))
-        assertTrue(tree.contains(0))
-        assertEquals(11, tree.size)
+        assertTrue(treap.contains(0))
+        assertEquals(11, treap.size)
         assertEquals(7, set.size)
 
-        tree.remove(6)
+        treap.remove(6)
         assertFalse(set.contains(6))
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
         assertEquals(6, set.size)
 
-        tree.add(12)
+        treap.add(12)
         assertFalse(set.contains(12))
         assertEquals(6, set.size)
-        assertEquals(11, tree.size)
+        assertEquals(11, treap.size)
 
         set.remove(5)
         assertFalse(set.contains(5))
-        assertFalse(tree.contains(5))
+        assertFalse(treap.contains(5))
     }
 
     protected fun doTailSetRelationTest() {
-        val set: SortedSet<Int> = tree.tailSet(4)
+        val set: SortedSet<Int> = treap.tailSet(4)
         assertEquals(7, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
 
-        tree.add(12)
+        treap.add(12)
         assertTrue(set.contains(12))
         assertEquals(8, set.size)
-        assertEquals(11, tree.size)
+        assertEquals(11, treap.size)
 
         set.remove(4)
-        assertFalse(tree.contains(4))
+        assertFalse(treap.contains(4))
         assertEquals(7, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
 
-        tree.remove(6)
+        treap.remove(6)
         assertFalse(set.contains(6))
         assertEquals(6, set.size)
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
 
-        tree.add(0)
+        treap.add(0)
         assertFalse(set.contains(0))
         assertEquals(6, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
     }
 
     protected fun doSubSetTest() {
-        var set: SortedSet<Int> = tree.subSet(4, 9)
+        var set: SortedSet<Int> = treap.subSet(4, 9)
         assertEquals(5, set.size)
         assertEquals(false, set.contains(1))
         assertEquals(false, set.contains(2))
@@ -161,7 +161,7 @@ abstract class AbstractHeadTailTest {
         assertEquals(false, set.contains(9))
         assertEquals(false, set.contains(10))
 
-        set = tree.subSet(2, 3)
+        set = treap.subSet(2, 3)
         assertEquals(1, set.size)
         assertEquals(false, set.contains(1))
         assertEquals(true, set.contains(2))
@@ -176,40 +176,40 @@ abstract class AbstractHeadTailTest {
     }
 
     protected fun doSubSetRelationTest() {
-        val set: SortedSet<Int> = tree.subSet(2, 7)
+        val set: SortedSet<Int> = treap.subSet(2, 7)
         assertEquals(5, set.size)
 
         set.remove(4)
-        assertFalse(tree.contains(4))
+        assertFalse(treap.contains(4))
         assertEquals(4, set.size)
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
 
         set.add(3)
         assertTrue(set.contains(3))
-        assertTrue(tree.contains(3))
+        assertTrue(treap.contains(3))
         assertEquals(4, set.size)
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
 
-        tree.add(4)
+        treap.add(4)
         assertTrue(set.contains(4))
-        assertTrue(tree.contains(4))
-        assertEquals(10, tree.size)
+        assertTrue(treap.contains(4))
+        assertEquals(10, treap.size)
         assertEquals(5, set.size)
 
-        tree.remove(6)
+        treap.remove(6)
         assertFalse(set.contains(6))
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
         assertEquals(4, set.size)
 
-        tree.add(12)
+        treap.add(12)
         assertFalse(set.contains(12))
         assertEquals(4, set.size)
-        assertEquals(10, tree.size)
+        assertEquals(10, treap.size)
 
         set.remove(5)
         assertFalse(set.contains(5))
-        assertFalse(tree.contains(5))
+        assertFalse(treap.contains(5))
         assertEquals(3, set.size)
-        assertEquals(9, tree.size)
+        assertEquals(9, treap.size)
     }
 }
