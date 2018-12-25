@@ -5,12 +5,22 @@ import java.util.*;
 
 public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
+    private final Comparator<K> comparator;
+
     private static final Random rand = new Random();
     private Node<K> root = null;
     private int size;
     int subSize = 0;
     private K fromElement;
     private K toElement;
+
+    public Treap(Comparator<K> comparator) {
+        this.comparator = comparator;
+    }
+
+    public Treap() {
+        this.comparator = new NaturalOrderedComparator();
+    }
 
     static class Node<K> {
         Node<K> right, left;
@@ -28,6 +38,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     class SubTree extends Treap<K> {
 
         SubTree() {
+            super(comparator);
             Treap.this.subSize = 0;
             countSubSize();
         }
@@ -37,11 +48,13 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         public boolean add(K data) {
             Node<K> temp = find(data);
             if (temp != null) {
-                if (temp.value.compareTo(data) == 0) return false;
-                if (fromElement != null && data.compareTo(fromElement) < 0) return false;
-                if (toElement != null && data.compareTo(toElement) >= 0) return false;
+                Comparator<K> comparator = this.comparator();
+                assert comparator != null;
+                if (comparator.compare(temp.value, data) == 0) return false;
+                if (fromElement != null && comparator.compare(data, fromElement) < 0) return false;
+                if (toElement != null && comparator.compare(data, toElement) >= 0) return false;
             }
-            root = add(root, data);
+            root = add(root, data, Treap.this.comparator());
             size++;
             Treap.this.subSize++;
             return true;
@@ -55,7 +68,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             Node<K> node = find(data);
             if (node == null) return false;
             if (!this.contains(o)) return false;
-            root = remove(root, data);
+            root = remove(root, data, Treap.this.comparator());
             size--;
             Treap.this.subSize--;
             return true;
@@ -66,33 +79,38 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             return Treap.this.subSize;
         }
 
+        // Если элемент найден и входит в границы подмножества, возвращаем true, иначе false
         @Override
         public boolean contains(Object o) {
             @SuppressWarnings("unchecked")
             K t = (K) o;
             Node<K> closest = find(t);
-            return closest != null && t.compareTo(closest.value) == 0 &&
-                    (fromElement == null || t.compareTo(fromElement) >= 0) &&
-                    (toElement == null || t.compareTo(toElement) < 0);
+            Comparator<K> comparator = this.comparator();
+            assert comparator != null;
+            return closest != null && comparator.compare(t, closest.value) == 0 &&
+                    (fromElement == null || comparator.compare(t, fromElement) >= 0) &&
+                    (toElement == null || comparator.compare(t, toElement) < 0);
         }
 
     }
 
     // Подсчет размера подмножества
     private void countSubSize() {
+        Comparator<K> comparator = this.comparator();
+        assert comparator != null;
         if (fromElement == null && toElement != null) {
             for (K k : Treap.this) {
-                if (k.compareTo(toElement) < 0) subSize++;
+                if (comparator.compare(k, toElement) < 0) subSize++;
             }
         }
         if (fromElement != null && toElement == null) {
             for (K k : Treap.this) {
-                if (k.compareTo(fromElement) >= 0) subSize++;
+                if (comparator.compare(k, fromElement) >= 0) subSize++;
             }
         }
         if (fromElement != null && toElement != null) {
             for (K k : Treap.this) {
-                if (k.compareTo(toElement) < 0 && k.compareTo(fromElement) >= 0) subSize++;
+                if (comparator.compare(k, toElement) < 0 && comparator.compare(k, fromElement) >= 0) subSize++;
             }
         }
     }
@@ -104,7 +122,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     }
 
     private Node<K> find(Node<K> start, K value) {
-        int comparison = value.compareTo(start.value);
+        int comparison = this.comparator() == null ? value.compareTo(start.value) :
+                this.comparator().compare(value, start.value);
         if (comparison == 0) {
             return start;
         } else if (comparison < 0) {
@@ -118,14 +137,17 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
     // Проверка на естественную упорядоченность дерева
     boolean checkInvariant() {
-        return root == null || checkInvariant(root);
+        Comparator<K> comparator = this.comparator();
+        assert comparator != null;
+        return root == null || checkInvariant(root, comparator);
     }
 
-    private boolean checkInvariant(Node<K> node) {
+    private boolean checkInvariant(Node<K> node, Comparator<K> comparator) {
         Node<K> left = node.left;
-        if (left != null && (left.value.compareTo(node.value) >= 0 || !checkInvariant(left))) return false;
+        if (left != null && (comparator.compare(left.value, node.value) >= 0 || !checkInvariant(left, comparator)))
+            return false;
         Node<K> right = node.right;
-        return right == null || right.value.compareTo(node.value) > 0 && checkInvariant(right);
+        return right == null || comparator.compare(right.value, node.value) > 0 && checkInvariant(right, comparator);
     }
 
     // Проверка соответствия дерева свойствам максимальной двоичной кучи
@@ -142,11 +164,11 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
     @Nullable
     @Override
-    public Comparator<? super K> comparator() {
-        return new TreapComporator();
+    public Comparator<K> comparator() {
+        return this.comparator != null ? this.comparator : new NaturalOrderedComparator();
     }
 
-    private class TreapComporator implements Comparator<K> {
+    private class NaturalOrderedComparator implements Comparator<K> {
 
         @Override
         public int compare(K o1, K o2) {
@@ -214,7 +236,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         @SuppressWarnings("unchecked")
         K t = (K) o;
         Node<K> closest = find(t);
-        return closest != null && t.compareTo(closest.value) == 0;
+        Comparator<K> comparator = this.comparator();
+        assert comparator != null;
+        return closest != null && comparator.compare(t, closest.value) == 0;
     }
 
     @NotNull
@@ -246,41 +270,43 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     // по сетку вызовов, на каждом шаге при необходимости вращая дерево (если нарушены приоритеты узлов)
     @Override
     public boolean add(K data) {
+        Comparator<K> comparator = this.comparator();
+        assert comparator != null;
         if (data == null) return false;
         Node<K> temp = find(data);
         if (temp != null) {
-            if (temp.value.compareTo(data) == 0) return false;
+            if (comparator.compare(temp.value, data) == 0) return false;
         }
-        root = add(root, data);
+        root = add(root, data, comparator);
         size++;
         return true;
     }
 
-    Node<K> add(Node<K> node, K data) {
+    Node<K> add(Node<K> node, K data, Comparator<K> comparator) {
         if (node == null) {
             Node<K> newNode = new Node<>(data);
             // Проверяем, добавлять ли элементы в множетво
             // (увеличиваем размер множества, границы уже хранятся в классе Treap)
             if (toElement != null && fromElement != null) {
-                if (newNode.value.compareTo(toElement) < 0 &&
-                        newNode.value.compareTo(fromElement) >= 0) {
+                if (comparator.compare(newNode.value, toElement) < 0 &&
+                        comparator.compare(newNode.value, fromElement) >= 0) {
                     subSize++;
                 }
-            } else if (toElement != null && newNode.value.compareTo(toElement) < 0
-                    || fromElement != null && newNode.value.compareTo(fromElement) >= 0) {
+            } else if (toElement != null && comparator.compare(newNode.value, toElement) < 0
+                    || fromElement != null && comparator.compare(newNode.value, fromElement) >= 0) {
                 subSize++;
             }
             return newNode;
         }
 
 
-        int compare = data.compareTo(node.value);
+        int compare = comparator.compare(data, node.value);
         if (compare < 0) {
-            node.left = add(node.left, data);
+            node.left = add(node.left, data, comparator);
             if (node.priority < node.left.priority)
                 return rotateRight(node);
         } else if (compare > 0) {
-            node.right = add(node.right, data);
+            node.right = add(node.right, data, comparator);
             if (node.priority < node.right.priority)
                 return rotateLeft(node);
         }
@@ -306,34 +332,36 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     // поднимаемся обратно наверх
     @Override
     public boolean remove(Object o) {
+        Comparator<K> comparator = this.comparator();
+        assert comparator != null;
         if (o == null) return false;
         @SuppressWarnings("unchecked")
         K data = (K) o;
         Node<K> node = find(data);
         if (node == null) return false;
-        if (node.value.compareTo(data) != 0) return false;
+        if (comparator.compare(node.value, data) != 0) return false;
         // Проверка на границы множества
         if (toElement != null && fromElement != null) {
-            if (node.value.compareTo(toElement) < 0 &&
-                    node.value.compareTo(fromElement) >= 0) {
+            if (comparator.compare(node.value, toElement) < 0 &&
+                    comparator.compare(node.value, fromElement) >= 0) {
                 subSize--;
             }
-        } else if (toElement != null && node.value.compareTo(toElement) < 0 ||
-                fromElement != null && node.value.compareTo(fromElement) >= 0) {
+        } else if (toElement != null && comparator.compare(node.value, toElement) < 0 ||
+                fromElement != null && comparator.compare(node.value, fromElement) >= 0) {
             subSize--;
         }
-        root = remove(root, data);
+        root = remove(root, data, comparator);
         size--;
         return true;
     }
 
-    Node<K> remove(Node<K> node, K data) {
+    Node<K> remove(Node<K> node, K data, Comparator<K> comparator) {
         if (node != null) {
-            int compare = data.compareTo(node.value);
+            int compare = comparator.compare(data, node.value);
             if (compare < 0) {
-                node.left = remove(node.left, data);
+                node.left = remove(node.left, data, comparator);
             } else if (compare > 0) {
-                node.right = remove(node.right, data);
+                node.right = remove(node.right, data, comparator);
             } else {
                 if (node.left == null) {
                     return node.right;
@@ -341,7 +369,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
                     return node.left;
                 } else {
                     node.value = this.leftmost(node.right);
-                    node.right = remove(node.right, node.value);
+                    node.right = remove(node.right, node.value, comparator);
                 }
             }
         }
