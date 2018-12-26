@@ -21,7 +21,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     }
 
     public Treap() {
-        this.comparator = new NaturalOrderedComparator();
+        this.comparator = Comparable::compareTo;
     }
 
     static class Node<K> {
@@ -175,16 +175,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     @Nullable
     @Override
     public Comparator<K> comparator() {
-        return this.comparator != null ? this.comparator : new NaturalOrderedComparator();
+        return this.comparator != null ? this.comparator : Comparable::compareTo;
     }
 
-    private class NaturalOrderedComparator implements Comparator<K> {
-
-        @Override
-        public int compare(K o1, K o2) {
-            return o1.compareTo(o2);
-        }
-    }
 
     // Создание подмножеств. Данные методы устанвливают границы множеств и возвращают новый объект класса SubSet
     @NotNull
