@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+// Здесь находятся тесты всех All-методов и каст к массивам. Код понятен интуитивно
 class TreapArraysTest {
 
     @Test

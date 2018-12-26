@@ -10,7 +10,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     private static final Random rand = new Random();
     private Node<K> root = null;
     private int size;
-    int subSize = 0;
+    int subSize = 0; // размер подмножества
+
+    // Границы подмножества
     private K fromElement;
     private K toElement;
 
@@ -24,6 +26,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
     static class Node<K> {
         Node<K> right, left;
+
+        // Приоритет узла, в данном случае узлы располагаются по принципу максимальной двоичной кучи.
+        // У корня самый высокий приоритет
         final double priority;
         private K value;
 
@@ -37,8 +42,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
     // Класс подмножества дерева
     class SubTree extends Treap<K> {
 
+        // При создании нового множества обнуляем его размер и пересчитываем заново методом countSubSize()
         SubTree() {
-            super(comparator);
             Treap.this.subSize = 0;
             countSubSize();
         }
@@ -79,7 +84,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             return Treap.this.subSize;
         }
 
-        // Если элемент найден и входит в границы подмножества, возвращаем true, иначе false
+        // Если элемент присутствует в дереве и входит в границы подмножества, возвращаем true, иначе false
         @Override
         public boolean contains(Object o) {
             @SuppressWarnings("unchecked")
@@ -94,7 +99,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
     }
 
-    // Подсчет размера подмножества
+    // Подсчет размера подмножества. Алгоритм прост: выбираем нужный случай существования границ и проходимся по всем
+    // элементам дерева, сверяя их с границами и увеличивая размер подмножества, если элемент в них находится.
     private void countSubSize() {
         Comparator<K> comparator = this.comparator();
         assert comparator != null;
@@ -135,7 +141,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         }
     }
 
-    // Проверка на естественную упорядоченность дерева
+    // Проверка на естественную упорядоченность дерева. Алгоритм - по рекурсии спускаемся в низ левой ветки, оттуда
+    // переходим к следующему по возрастанию элементу, сравниваем.
     boolean checkInvariant() {
         Comparator<K> comparator = this.comparator();
         assert comparator != null;
@@ -150,7 +157,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return right == null || comparator.compare(right.value, node.value) > 0 && checkInvariant(right, comparator);
     }
 
-    // Проверка соответствия дерева свойствам максимальной двоичной кучи
+    // Проверка соответствия дерева свойствам максимальной двоичной кучи. Алгоритм практически идентичный предыдущему,
+    // но с другой проверкой.
     boolean checkPriorityOrder() {
         return root == null || checkPriorityOrder(root);
     }
@@ -162,6 +170,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return right == null || right.priority < node.priority && checkPriorityOrder(right);
     }
 
+    // Возвращаем компаратор этого дерева, если таковой был передан ему в конструктор при создании. В противном случае
+    // возвращаем компаратор, осуществляющий естественный порядок элементов.
     @Nullable
     @Override
     public Comparator<K> comparator() {
@@ -176,7 +186,7 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         }
     }
 
-    // Данные методы устанвливают границы множеств, возвращают объект класса SubSet
+    // Создание подмножеств. Данные методы устанвливают границы множеств и возвращают новый объект класса SubSet
     @NotNull
     @Override
     public SortedSet<K> subSet(K fromElement, K toElement) {
@@ -266,8 +276,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return a;
     }
 
-    // Рекусрвиный алгоритм доавбления. Доходим рекурсией до места, куда нужно добавить элемент, далее поднимаемся вверх
-    // по сетку вызовов, на каждом шаге при необходимости вращая дерево (если нарушены приоритеты узлов)
+    // Если пользователь пытается добавить null или уже находящийся в девере элемент, возвращаемся false и
+    // ничего не делаем. В противном случае добавляем элемент, увлечиваем размер дерева, возвращаем true.
     @Override
     public boolean add(K data) {
         Comparator<K> comparator = this.comparator();
@@ -282,11 +292,18 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return true;
     }
 
+    /**
+     * Рекусрвиный алгоритм добавления. Доходим рекурсией до места, куда нужно добавить элемент, добавляем,
+     * далее поднимаемся вверх по сетку вызовов, на каждом шаге при необходимости вращая дерево
+     * (если нарушены приоритеты узлов) и переприсваивая результат вращения соответствующему потомку предыдущего узла,
+     * с которого вызывался метод, таким образом доходя до корня. В худшем случае перестаивается всё дерево.
+     */
     Node<K> add(Node<K> node, K data, Comparator<K> comparator) {
         if (node == null) {
             Node<K> newNode = new Node<>(data);
-            // Проверяем, добавлять ли элементы в множетво
-            // (увеличиваем размер множества, границы уже хранятся в классе Treap)
+
+            // Проверяем, добавлять ли элемент в подмножетво
+            // (увеличиваем размер множества, если элемент находится в границах)
             if (toElement != null && fromElement != null) {
                 if (comparator.compare(newNode.value, toElement) < 0 &&
                         comparator.compare(newNode.value, fromElement) >= 0) {
@@ -296,9 +313,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
                     || fromElement != null && comparator.compare(newNode.value, fromElement) >= 0) {
                 subSize++;
             }
+
             return newNode;
         }
-
 
         int compare = comparator.compare(data, node.value);
         if (compare < 0) {
@@ -313,7 +330,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return node;
     }
 
-    // Методы правого и левого поворотов соответственно
+    // Методы правого и левого поворотов соответственно (как и в АВЛ-дереве). Ось вращения - узел, подаваемый на
+    // вход метода, он же node
     private Node<K> rotateRight(Node<K> node) {
         Node<K> leftNode = node.left;
         node.left = leftNode.right;
@@ -328,8 +346,9 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         return rightNode;
     }
 
-    // Рекурсивный алгоритм удаления. Опускаемся вниз до удаляемого элемента, удаляем, сохраняя связи в дереве,
-    // поднимаемся обратно наверх
+    // Если пользователь пытается удалить null или несуществующий в дереве объект, или если дерево пустое - возвращаем
+    // false и ничего не делаем. В противном случае безопасно удаляем нужный элемент, уменьшаем границы дерева
+    // (и множества, если элемент туда входил) и возвращаем true.
     @Override
     public boolean remove(Object o) {
         Comparator<K> comparator = this.comparator();
@@ -340,7 +359,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
         Node<K> node = find(data);
         if (node == null) return false;
         if (comparator.compare(node.value, data) != 0) return false;
-        // Проверка на границы множества
+
+        // Проверка на вхождение элемента в границы множества
         if (toElement != null && fromElement != null) {
             if (comparator.compare(node.value, toElement) < 0 &&
                     comparator.compare(node.value, fromElement) >= 0) {
@@ -350,11 +370,14 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
                 fromElement != null && comparator.compare(node.value, fromElement) >= 0) {
             subSize--;
         }
+
         root = remove(root, data, comparator);
         size--;
         return true;
     }
 
+    // Рекурсивный алгоритм удаления. Опускаемся вниз до удаляемого элемента, удаляем, сохраняя связи в дереве,
+    // поднимаемся обратно наверх.
     Node<K> remove(Node<K> node, K data, Comparator<K> comparator) {
         if (node != null) {
             int compare = comparator.compare(data, node.value);
@@ -439,7 +462,8 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
             }
         }
 
-        // fromNext - индикатор, сигнализирующий о том, опрашиваем мы итератор или двигаемся по нему вперёд
+        // fromNext - индикатор, сигнализирующий о том, опрашиваем мы итератор (false) или
+        // двигаемся по нему вперёд (true)
         private Node<K> findNext(boolean fromNext) {
             if (current == null) {
                 if (fromNext) {
@@ -451,13 +475,17 @@ public class Treap<K extends Comparable<K>> implements SortedSet<K> {
 
             Node<K> result = current;
 
+            // Если у текущего узла нет правого потомка и при этом наша очередь не пуста, записываем в результат
+            // первый её элемент (двигаемся вверх по левой ветке)
             if (result.right == null && elements.size() != 0) {
                 result = elements.getFirst();
 
                 if (fromNext) {
-                    elements.remove(0);
+                    elements.remove(0); // удаляем элемент, если вызыван next() и мы двигаемся по дереву дальше
                 }
+
             } else {
+
                 // Если у текущего узла есть правый потомок, спускаемся вниз по его левой ветви (если она есть)
                 // и в зависимости от флага fromNext либо возвращаем самый крайний (false),
                 // либо как в конструкторе заполняем нашу очередь (true)
